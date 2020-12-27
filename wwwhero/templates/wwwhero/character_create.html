@@ -1,0 +1,14 @@
+{% extends 'wwwhero/base.html' %}
+
+{% block title %}Create{% endblock %}
+
+{% block content %}
+    <h3 class="mb-4">Character Creation</h3>
+    <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+            <p>{{ field.label }}: {{ field }}</p>
+        {% endfor %}
+        <button type="submit" class="btn btn-outline-success">Create</button>
+    </form>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends 'wwwhero/base.html' %}
+
+{% block title %}Sign Up{% endblock %}
+
+{% block content %}
+    <h3 class="mb-4">Sign up</h3>
+    <form method="post" action="{% url 'signup' %}">
+        {% csrf_token %}
+
+        {% for field in form %}
+            <p>{{ field.label }}: {{ field }}</p>
+            {{ field.errors }}
+        {% endfor %}
+        <button type="submit" class="btn btn-outline-success">Sign up</button>
+    </form>
+{% endblock %}

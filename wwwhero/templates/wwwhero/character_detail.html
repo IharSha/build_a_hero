@@ -1,0 +1,10 @@
+{% extends 'wwwhero/base.html' %}
+
+{% block title %}Create{% endblock %}
+
+{% block content %}
+    <h3 class="mb-4">Character Details</h3>
+    <p>Attributes: {{ attributes }}</p>
+    <p>Level: {{ character.level }}</p>
+    <a class="btn btn-outline-success" href="{% url 'character_level_up' character_id=character.id %}">Level Up!</a>
+{% endblock %}

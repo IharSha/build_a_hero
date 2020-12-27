@@ -1,0 +1,38 @@
+{% extends 'wwwhero/base.html' %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+    <h3 class="mb-4">Home</h3>
+    {% if user.is_authenticated %}
+        <p>Good day, {{ user.username.capitalize }}!</p>
+        {% if context.characters %}
+            <p class="w-25 mx-auto">
+                <a class="list-group-item list-group-item-action" href="{% url 'character_detail' character_id=context.characters.first.id %}">
+                    Continue &rarr; {{ context.characters.first }}
+                </a></p>
+            <p>
+                <button class="btn btn-outline-success" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCharacters" aria-expanded="false" aria-controls="collapseCharacters">
+                Characters &darr;
+                </button>
+            </p>
+            <p>
+                <div class="collapse" id="collapseCharacters">
+                        <ul class="list-group list-group-flush w-25 mx-auto">
+                            {% for char in context.characters %}
+                                <li class="list-group">
+                                    <a class="list-group-item list-group-item-action {% if char.id == context.characters.first.id %}list-group-item-dark{% endif %}" href="{% url 'character_detail' character_id=char.id %}">
+                                        {{ forloop.counter }}. {{ char }}
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                </div>
+            </p>
+        {% endif %}
+        <p><a class="btn btn-outline-success" href="{% url 'character_create' %}">Create New Character</a></p>
+    {% else %}
+        <a class="btn btn-outline-success" href="{% url 'login' %}">Log in</a>
+        <a class="btn btn-outline-success" href="{% url 'signup' %}">Sign up</a>
+    {% endif %}
+{% endblock %}
