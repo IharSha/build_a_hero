@@ -7,6 +7,8 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.1/ref/settings/
 """
 
+import django_heroku
+
 from pathlib import Path
 
 from django.contrib.messages import constants as messages
@@ -25,7 +27,7 @@ try:
     from local_settings import SECRET_KEY, DEBUG
 except ImportError:
     SECRET_KEY = get_random_secret_key()
-    DEBUG = True
+    DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
@@ -131,3 +133,6 @@ MESSAGE_TAGS = {
     messages.WARNING: 'alert-warning',
     messages.ERROR: 'alert-danger',
 }
+
+# Activate Django-Heroku.
+django_heroku.settings(locals())
