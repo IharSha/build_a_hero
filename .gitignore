@@ -19,9 +19,6 @@ env.bak/
 venv.bak/
 local_pyenv/
 
-# Migrations
-/wwwhero/migrations/
-
 # Pycharm
 .idea/
 
