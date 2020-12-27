@@ -5,11 +5,13 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.shortcuts import get_object_or_404
 
-from wwwhero.models import Character, CharacterAttributes
+from wwwhero.models import Character, CharacterAttributes, UserVisit
 from wwwhero.forms import CharacterCreateForm
 
 
 def index(request):
+    count_user_visit(request)
+
     user = request.user
     if request.user.is_authenticated:
         characters = Character.objects.filter(user=user).order_by('-updated_at')
@@ -22,6 +24,7 @@ def index(request):
 
 @login_required
 def character_detail(request, character_id):
+    count_user_visit(request)
     character = get_object_or_404(
         Character,
         pk=character_id,
@@ -35,6 +38,8 @@ def character_detail(request, character_id):
 
 @login_required
 def character_level_up(request, character_id):
+    count_user_visit(request)
+
     character = get_object_or_404(
         Character,
         pk=character_id,
@@ -48,6 +53,8 @@ def character_level_up(request, character_id):
 
 @login_required
 def character_create_view(request):
+    count_user_visit(request)
+
     user = request.user
     form = CharacterCreateForm(user=user, data=request.POST or None)
     if request.method == 'POST':
@@ -79,12 +86,15 @@ def login_view(request):
 
 
 def logout_view(request):
+    count_user_visit(request)
     logout(request)
 
     return redirect('index')
 
 
 def signup_view(request):
+    count_user_visit(request)
+
     if request.user.is_authenticated:
         return redirect('index')
 
@@ -101,11 +111,13 @@ def signup_view(request):
     return render(request, 'wwwhero/signup.html', {'form': form})
 
 
-def check_character_exist(request, character_id):
-    try:
-        character = Character.objects.get(id=character_id, user=request.user)
-    except Character.DoesNotExist:
-        messages.warning(request, 'There is no such page.')
-        return redirect('index')
-
-    return character
+def count_user_visit(request):
+    user = request.user
+    if user.is_authenticated:
+        visitor, _ = UserVisit.objects.get_or_create(
+            user=user,
+            url=request.path,
+            method=request.method,
+        )
+        visitor.view += 1
+        visitor.save()

@@ -52,3 +52,21 @@ class CharacterAttributes(models.Model):
 
     class Meta:
         verbose_name_plural = "Character Attributes"
+
+
+class UserVisit(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    view = models.PositiveSmallIntegerField(default=0)
+    url = models.CharField(null=False, max_length=200)
+    method = models.CharField(max_length=8)
+
+    def __str__(self):
+        if len(self.url) > 10:
+            url = self.url[:10] + '...'
+        else:
+            url = self.url
+
+        return f"{self.user.username}, {url}, {self.method}, {self.view} views"
+
+    class Meta:
+        unique_together = ['user', 'url', 'method']
