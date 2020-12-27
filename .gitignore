@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Saved data:
+*.dat
+
 # Django stuff:
 *.log
 local_settings.py
@@ -18,12 +21,3 @@ ENV/
 env.bak/
 venv.bak/
 local_pyenv/
-
-# Migrations
-/wwwhero/migrations/
-
-# Pycharm
-.idea/
-
-# Saved data:
-*.dat
