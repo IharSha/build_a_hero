@@ -126,8 +126,6 @@ MESSAGE_TAGS = {
     messages.ERROR: 'alert-danger',
 }
 
-SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
-
 dotenv_file = os.path.join(BASE_DIR, ".env")
 if os.path.isfile(dotenv_file):
     dotenv.load_dotenv(dotenv_file)

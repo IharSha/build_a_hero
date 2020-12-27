@@ -47,7 +47,8 @@ class CharacterAttributes(models.Model):
         self.save()
 
     def __str__(self):
-        return f"HP {self.hp}/{self.max_hp}, DMG {self.dmg}, Luck {self.luck}"
+        return f"Name {self.character.name}." \
+               f" HP {self.hp}/{self.max_hp}, DMG {self.dmg}, Luck {self.luck}"
 
     class Meta:
         verbose_name_plural = "Character Attributes"
