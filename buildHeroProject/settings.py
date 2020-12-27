@@ -7,12 +7,11 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.1/ref/settings/
 """
 
-import dj_database_url
-import dotenv
-
 import os
 from pathlib import Path
 
+import dj_database_url
+import dotenv
 from django.contrib.messages import constants as messages
 
 
