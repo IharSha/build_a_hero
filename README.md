@@ -1,6 +1,9 @@
 # Build A Hero
 Another small pet project to create a random character.
 
-Just do `python main.py`, python has to be installed.
+To start locally:
+1. `pip install -r requirements.txt`
+2. `manage.py makemigrations` then `manage.py migrate`
+3. `manage.py runserver`
 
-pew-pew :)
+Enjoy :)
