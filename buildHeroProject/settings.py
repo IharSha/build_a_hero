@@ -29,7 +29,7 @@ try:
     from local_settings import SECRET_KEY, DEBUG
 except ImportError:
     SECRET_KEY = get_random_secret_key()
-    DEBUG = False
+    DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
