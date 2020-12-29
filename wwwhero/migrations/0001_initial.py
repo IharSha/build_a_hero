@@ -31,7 +31,14 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='CharacterAttributes',
             fields=[
-                ('character', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, primary_key=True, serialize=False, to='wwwhero.character')),
+                (
+                    'character', models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        primary_key=True,
+                        serialize=False,
+                        to='wwwhero.character'
+                    )
+                ),
                 ('max_hp', models.IntegerField(default=10)),
                 ('hp', models.IntegerField(default=10)),
                 ('dmg', models.IntegerField(default=1)),
