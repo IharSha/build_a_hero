@@ -10,4 +10,3 @@ class CharacterAdmin(admin.ModelAdmin):
 admin.site.register(Character, CharacterAdmin)
 admin.site.register(CharacterAttributes)
 admin.site.register(UserVisit)
-
