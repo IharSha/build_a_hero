@@ -25,6 +25,11 @@ class Character(models.Model):
         unique_together = ['user', 'name']
 
 
+class CharacterSelection(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
+    character = models.OneToOneField(Character, on_delete=models.CASCADE, null=True)
+
+
 class CharacterAttributes(models.Model):
     LEVEL_UP_POINTS = 25
 

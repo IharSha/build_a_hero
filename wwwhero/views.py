@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
@@ -5,7 +6,7 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.shortcuts import get_object_or_404
 
-from wwwhero.models import Character, CharacterAttributes, UserVisit
+from wwwhero.models import Character, CharacterAttributes, UserVisit, CharacterSelection
 from wwwhero.forms import CharacterCreateForm
 
 
@@ -15,7 +16,8 @@ def index(request):
     user = request.user
     if request.user.is_authenticated:
         characters = Character.objects.filter(user=user).order_by('-updated_at')
-        context = {"characters": characters}
+        selected_char = CharacterSelection.objects.filter(user=user).first()
+        context = {'characters': characters, 'selected_char': selected_char}
     else:
         context = {}
 
@@ -25,13 +27,20 @@ def index(request):
 @login_required
 def character_detail(request, character_id):
     count_user_visit(request)
+    user = request.user
     character = get_object_or_404(
         Character,
         pk=character_id,
-        user=request.user
+        user=user
     )
+    with transaction.atomic():
+        selected, _ = CharacterSelection.objects.get_or_create(user=user)
+        selected.character = character
+        selected.save()
+
     attributes = CharacterAttributes.objects.get(character=character)
-    context = {"character": character, "attributes": attributes}
+
+    context = {'character': character, 'attributes': attributes}
 
     return render(request, 'wwwhero/character_detail.html', context)
 
@@ -59,9 +68,14 @@ def character_create_view(request):
     form = CharacterCreateForm(user=user, data=request.POST or None)
     if request.method == 'POST':
         if form.is_valid():
-            name = form.cleaned_data["name"]
-            char, _ = Character.objects.get_or_create(name=name, user=user)
-            CharacterAttributes.objects.get_or_create(character=char)
+            name = form.cleaned_data['name']
+            with transaction.atomic():
+                char, _ = Character.objects.get_or_create(name=name, user=user)
+                CharacterAttributes.objects.get_or_create(character=char)
+                selected, _ = CharacterSelection.objects.get_or_create(user=user)
+                selected.character = char
+                selected.save()
+
             messages.success(request, "Character created!")
             return redirect('character_detail', character_id=char.id)
         else:
