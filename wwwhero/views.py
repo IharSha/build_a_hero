@@ -25,8 +25,9 @@ def index(request):
 
 
 @login_required
-def character_detail(request, character_id):
+def character_select(request, character_id):
     count_user_visit(request)
+
     user = request.user
     character = get_object_or_404(
         Character,
@@ -38,6 +39,17 @@ def character_detail(request, character_id):
         selected.character = character
         selected.save()
 
+    return redirect('character_detail')
+
+
+@login_required
+def character_detail(request):
+    count_user_visit(request)
+
+    user = request.user
+    selected_char = get_object_or_404(CharacterSelection, user=user)
+    character = get_object_or_404(Character, pk=selected_char.character_id)
+
     attributes = CharacterAttributes.objects.get(character=character)
 
     context = {'character': character, 'attributes': attributes}
@@ -46,18 +58,17 @@ def character_detail(request, character_id):
 
 
 @login_required
-def character_level_up(request, character_id):
+def character_level_up(request):
     count_user_visit(request)
 
-    character = get_object_or_404(
-        Character,
-        pk=character_id,
-        user=request.user
-    )
+    user = request.user
+    selected_char = get_object_or_404(CharacterSelection, user=user)
+    character = get_object_or_404(Character, pk=selected_char.character_id)
+
     character.level_up()
     messages.success(request, f"Congrats! now you're level {character.level}.")
 
-    return redirect('character_detail', character_id=character.id)
+    return redirect('character_detail')
 
 
 @login_required
@@ -72,12 +83,9 @@ def character_create_view(request):
             with transaction.atomic():
                 char, _ = Character.objects.get_or_create(name=name, user=user)
                 CharacterAttributes.objects.get_or_create(character=char)
-                selected, _ = CharacterSelection.objects.get_or_create(user=user)
-                selected.character = char
-                selected.save()
 
             messages.success(request, "Character created!")
-            return redirect('character_detail', character_id=char.id)
+            return redirect('character_select', character_id=char.id)
         else:
             for _, er in form.errors.items():
                 messages.error(request, er.as_text())
