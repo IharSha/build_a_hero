@@ -25,7 +25,7 @@
                             {% for char in context.characters %}
                                 <li class="list-group">
                                     <a class="list-group-item list-group-item-action {% if char.id == context.selected_char.character.id %}list-group-item-dark{% endif %}" href="{% url 'character_select' character_id=char.id %}">
-                                        {{ forloop.counter }}. {{ char }}
+                                        {{ forloop.counter }}. {{ char.name }}, level {{ char.level }}
                                     </a>
                                 </li>
                             {% endfor %}
