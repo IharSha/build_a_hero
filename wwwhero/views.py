@@ -1,13 +1,16 @@
 from django.db import transaction
+from django.db.models import F
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 
-from wwwhero.models import Character, CharacterAttributes, UserVisit, CharacterSelection
+from wwwhero.models import Character, CharacterAttributes, UserVisit, CharacterSelection, CharacterCooldown
 from wwwhero.forms import CharacterCreateForm
+from wwwhero.exceptions import LevelUpCooldownError, MaxLevelError
 
 
 def index(request):
@@ -25,8 +28,9 @@ def index(request):
 
 
 @login_required
-def character_detail(request, character_id):
+def character_select(request, character_id):
     count_user_visit(request)
+
     user = request.user
     character = get_object_or_404(
         Character,
@@ -34,30 +38,60 @@ def character_detail(request, character_id):
         user=user
     )
     with transaction.atomic():
-        selected, _ = CharacterSelection.objects.get_or_create(user=user)
-        selected.character = character
-        selected.save()
+        CharacterSelection.objects.update_or_create(
+            user=user,
+            defaults={'character': character}
+        )
 
+    return redirect('character_detail')
+
+
+@login_required
+def character_detail(request):
+    count_user_visit(request)
+
+    user = request.user
+    selected_char = get_object_or_404(CharacterSelection, user=user)
+    character = get_object_or_404(Character, pk=selected_char.character_id)
     attributes = CharacterAttributes.objects.get(character=character)
+    cooldown = CharacterCooldown.objects.filter(
+        character=character,
+        type=CharacterCooldown.Type.LEVEL,
+    ).first()
+    if cooldown and cooldown.until > timezone.now():
+        cooldown_until = cooldown.until - timezone.now()
+        cooldown_until = cooldown_until.seconds + 1  # round to the next second
+    else:
+        cooldown_until = 0
 
-    context = {'character': character, 'attributes': attributes}
+    context = {
+        'character': character,
+        'attributes': attributes,
+        'cooldown_s': cooldown_until
+    }
 
     return render(request, 'wwwhero/character_detail.html', context)
 
 
 @login_required
-def character_level_up(request, character_id):
+def character_level_up(request):
     count_user_visit(request)
 
-    character = get_object_or_404(
-        Character,
-        pk=character_id,
-        user=request.user
-    )
-    character.level_up()
-    messages.success(request, f"Congrats! now you're level {character.level}.")
+    user = request.user
+    selected_char = get_object_or_404(CharacterSelection, user=user)
+    character = get_object_or_404(Character, pk=selected_char.character_id)
+    try:
+        character.level_up()
+        messages.success(request, f"Congrats! Now you're level {character.level}.")
+    except LevelUpCooldownError:
+        messages.error(request, "Nice try, but no! You have a level up cooldown.")
+    except MaxLevelError:
+        messages.error(
+            request,
+            f"You are too strong already. Max level {character.MAX_LEVEL} reached."
+        )
 
-    return redirect('character_detail', character_id=character.id)
+    return redirect('character_detail')
 
 
 @login_required
@@ -72,12 +106,9 @@ def character_create_view(request):
             with transaction.atomic():
                 char, _ = Character.objects.get_or_create(name=name, user=user)
                 CharacterAttributes.objects.get_or_create(character=char)
-                selected, _ = CharacterSelection.objects.get_or_create(user=user)
-                selected.character = char
-                selected.save()
 
             messages.success(request, "Character created!")
-            return redirect('character_detail', character_id=char.id)
+            return redirect('character_select', character_id=char.id)
         else:
             for _, er in form.errors.items():
                 messages.error(request, er.as_text())
@@ -133,5 +164,5 @@ def count_user_visit(request):
             url=request.path,
             method=request.method,
         )
-        visitor.view += 1
+        visitor.view = F('view') + 1
         visitor.save()

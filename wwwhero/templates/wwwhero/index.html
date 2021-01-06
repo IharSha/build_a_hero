@@ -9,7 +9,7 @@
         {% if context.characters %}
             {% if context.selected_char.character %}
                 <p class="w-25 mx-auto">
-                    <a class="list-group-item list-group-item-action" href="{% url 'character_detail' character_id=context.selected_char.character.id %}">
+                    <a class="list-group-item list-group-item-action" href="{% url 'character_select' character_id=context.selected_char.character.id %}">
                         Continue &rarr; {{ context.selected_char.character.name }}
                     </a>
                 </p>
@@ -24,8 +24,8 @@
                         <ul class="list-group list-group-flush w-25 mx-auto">
                             {% for char in context.characters %}
                                 <li class="list-group">
-                                    <a class="list-group-item list-group-item-action {% if char.id == context.selected_char.character.id %}list-group-item-dark{% endif %}" href="{% url 'character_detail' character_id=char.id %}">
-                                        {{ forloop.counter }}. {{ char }}
+                                    <a class="list-group-item list-group-item-action {% if char.id == context.selected_char.character.id %}list-group-item-dark{% endif %}" href="{% url 'character_select' character_id=char.id %}">
+                                        {{ forloop.counter }}. {{ char.name }}, level {{ char.level }}
                                     </a>
                                 </li>
                             {% endfor %}

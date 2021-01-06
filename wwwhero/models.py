@@ -1,10 +1,16 @@
 from random import randint
+from datetime import timedelta
 
 from django.contrib.auth.models import User
 from django.db import models, transaction
+from django.utils import timezone
+
+from wwwhero.exceptions import LevelUpCooldownError, MaxLevelError
 
 
 class Character(models.Model):
+    MAX_LEVEL = 20
+
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=64, null=False)
     level = models.PositiveSmallIntegerField(default=1)
@@ -14,12 +20,30 @@ class Character(models.Model):
     def level_up(self):
         self.level += 1
         attrs, _ = CharacterAttributes.objects.get_or_create(character=self)
+
+        cooldown = CharacterCooldown.objects.filter(
+            character=self,
+            type=CharacterCooldown.Type.LEVEL,
+        ).first()
+        if cooldown and cooldown.until > timezone.now():
+            raise LevelUpCooldownError
+
+        if self.level > self.MAX_LEVEL:
+            raise MaxLevelError
+
         with transaction.atomic():
+            CharacterCooldown.objects.update_or_create(
+                character=self,
+                type=CharacterCooldown.Type.LEVEL,
+                defaults={
+                    'until': timezone.now() + timedelta(seconds=2 ** self.level)
+                }
+            )
             attrs.upgrade()
             self.save()
 
     def __str__(self):
-        return f"{self.name}, level {self.level}"
+        return f"{self.user}, {self.name}, level {self.level}"
 
     class Meta:
         unique_together = ['user', 'name']
@@ -52,11 +76,26 @@ class CharacterAttributes(models.Model):
         self.save()
 
     def __str__(self):
-        return f"Name {self.character.name}." \
+        return f"Character name: {self.character.name}." \
                f" HP {self.hp}/{self.max_hp}, DMG {self.dmg}, Luck {self.luck}"
 
     class Meta:
-        verbose_name_plural = "Character Attributes"
+        verbose_name_plural = "Character attributes"
+
+
+class CharacterCooldown(models.Model):
+    class Type(models.TextChoices):
+        LEVEL = "Level"
+        SKILL = "Skill"
+
+    type = models.CharField(
+        max_length=5,
+        choices=Type.choices,
+        default=Type.LEVEL,
+        blank=False
+    )
+    character = models.ForeignKey(Character, on_delete=models.CASCADE)
+    until = models.DateTimeField()
 
 
 class UserVisit(models.Model):
