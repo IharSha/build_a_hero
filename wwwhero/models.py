@@ -97,6 +97,9 @@ class CharacterCooldown(models.Model):
     character = models.ForeignKey(Character, on_delete=models.CASCADE)
     until = models.DateTimeField()
 
+    class Meta:
+        unique_together = ['type', 'character']
+
 
 class UserVisit(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
