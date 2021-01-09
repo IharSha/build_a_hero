@@ -1,0 +1,30 @@
+{% extends 'wwwhero/base.html' %}
+
+{% block title %}Map{% endblock %}
+
+{% block content %}
+    <h3 class="mb-4">The map</h3>
+    {% if not character_location %}
+        <p>Select where to go:</p>
+    {% endif %}
+    {% for location in locations %}
+        <p>
+            {% if character_level < location.min_level %}
+                <span class="form-text">
+                   {{ location }}<br> Minimum level is {{ location.min_level }}
+                </span>
+            {% else %}
+                <p class="w-25 mx-auto">
+                    <a class="list-group-item list-group-item-action" href="{% url 'location_select' location_id=location.id %}">
+                        {{ location }}
+                        {% if character_location.location == location %}
+                            <span class="form-text">
+                                (You are here)
+                            </span>
+                        {% endif %}
+                    </a>
+                </p>
+            {% endif %}
+        </p>
+    {% endfor %}
+{% endblock %}

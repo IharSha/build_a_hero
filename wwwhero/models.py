@@ -51,7 +51,7 @@ class Character(models.Model):
 
 class CharacterSelection(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
-    character = models.OneToOneField(Character, on_delete=models.CASCADE, null=True)
+    character = models.OneToOneField(Character, on_delete=models.CASCADE)
 
 
 class CharacterAttributes(models.Model):
@@ -76,7 +76,7 @@ class CharacterAttributes(models.Model):
         self.save()
 
     def __str__(self):
-        return f"Character name: {self.character.name}." \
+        return f"Character name: {self.character.name}," \
                f" HP {self.hp}/{self.max_hp}, DMG {self.dmg}, Luck {self.luck}"
 
     class Meta:
@@ -99,6 +99,36 @@ class CharacterCooldown(models.Model):
 
     class Meta:
         unique_together = ['type', 'character']
+
+
+class LocationType(models.Model):
+    name = models.CharField(max_length=32, primary_key=True)
+
+    def __str__(self):
+        return self.name
+
+
+class Location(models.Model):
+    name = models.CharField(max_length=64, unique=True)
+    image = models.ImageField(upload_to='bg/location', blank=True)
+    min_level = models.PositiveSmallIntegerField(default=1)
+    is_active = models.BooleanField(default=False)
+    type = models.ForeignKey(LocationType, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.name
+
+
+class CharacterLocation(models.Model):
+    character = models.OneToOneField(
+        Character,
+        on_delete=models.CASCADE,
+        primary_key=True
+    )
+    location = models.ForeignKey(Location, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return str(self.location)
 
 
 class UserVisit(models.Model):
