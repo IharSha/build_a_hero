@@ -3,28 +3,29 @@
 {% block title %}Home{% endblock %}
 
 {% block content %}
-    <h3 class="mb-4">Home</h3>
     {% if user.is_authenticated %}
-        <p>Good day, {{ user.username.capitalize }}!</p>
-        {% if context.characters %}
-            {% if context.selected_char.character %}
+        <h3 class="mb-4">Home</h3>
+        <p><span class="form-text">Hello {{ user.username.capitalize }}, my old friend</span></p>
+        {% if characters %}
+            {% if selected_char %}
                 <p class="w-25 mx-auto">
-                    <a class="list-group-item list-group-item-action" href="{% url 'character_select' character_id=context.selected_char.character.id %}">
-                        Continue &rarr; {{ context.selected_char.character.name }}
+                    <a class="list-group-item list-group-item-action" href="{% url 'character_select' character_id=selected_char.id %}">
+                        Continue &rarr; {{ selected_char.name }}<br>
+                        {% if location %}<span class="form-text"> Location: {{ location }}</span>{% endif %}
                     </a>
                 </p>
             {% endif %}
             <p>
                 <button class="btn btn-outline-success" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCharacters" aria-expanded="false" aria-controls="collapseCharacters">
-                Characters &darr;
+                Select Character &darr;
                 </button>
             </p>
             <p>
                 <div class="collapse" id="collapseCharacters">
                         <ul class="list-group list-group-flush w-25 mx-auto">
-                            {% for char in context.characters %}
+                            {% for char in characters %}
                                 <li class="list-group">
-                                    <a class="list-group-item list-group-item-action {% if char.id == context.selected_char.character.id %}list-group-item-dark{% endif %}" href="{% url 'character_select' character_id=char.id %}">
+                                    <a class="list-group-item list-group-item-action {% if char.id == selected_char.id %}list-group-item-dark{% endif %}" href="{% url 'character_select' character_id=char.id %}">
                                         {{ forloop.counter }}. {{ char.name }}, level {{ char.level }}
                                     </a>
                                 </li>
@@ -35,7 +36,9 @@
         {% endif %}
         <p><a class="btn btn-outline-success" href="{% url 'character_create' %}">Create New Character</a></p>
     {% else %}
-        <a class="btn btn-outline-success" href="{% url 'login' %}">Log in</a>
+        <h3 class="mb-4">Welcome!</h3>
+        <p><span class="form-text">Create new user or log in to continue</span></p>
         <a class="btn btn-outline-success" href="{% url 'signup' %}">Sign up</a>
+        <a class="btn btn-outline-success" href="{% url 'login' %}">Log in</a>
     {% endif %}
 {% endblock %}
