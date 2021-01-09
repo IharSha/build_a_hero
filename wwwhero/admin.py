@@ -15,8 +15,19 @@ class CharacterSelectionAdmin(admin.ModelAdmin):
     list_display = ('user', 'character')
 
 
+class CharacterLocationAdmin(admin.ModelAdmin):
+    list_display = ('character', 'location')
+
+
+class LocationAdmin(admin.ModelAdmin):
+    list_display = ('name', 'min_level', 'type', 'is_active')
+
+
 admin.site.register(Character, CharacterAdmin)
 admin.site.register(CharacterAttributes)
 admin.site.register(CharacterCooldown, CharacterCooldownAdmin)
 admin.site.register(CharacterSelection, CharacterSelectionAdmin)
+admin.site.register(CharacterLocation, CharacterLocationAdmin)
+admin.site.register(Location, LocationAdmin)
+admin.site.register(LocationType)
 admin.site.register(UserVisit)

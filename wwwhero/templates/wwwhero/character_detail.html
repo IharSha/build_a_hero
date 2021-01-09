@@ -4,16 +4,16 @@
 
 {% block content %}
     <h3 class="mb-4">Character Details</h3>
-    <span class="form-text" style="font-size:4mm"> Levels and attributes do nothing right now</span>
+    <span class="form-text" style="font-size:4mm">Levels and attributes do nothing right now, except increasing your ego</span>
     <p>{{ attributes }}</p>
     <p>Level: {{ character.level }}</p>
     {% if character.level < character.MAX_LEVEL %}
-        <a class="{% if cooldown_s %}disabled{% endif %} btn btn-success" {% if cooldown_s %}tabindex="-1" aria-disabled="true"{% endif %} id="levelup" href="{% url 'character_level_up' %}">
+        <a class="{% if cooldown_s %}disabled {% endif %}btn btn-success" {% if cooldown_s %}tabindex="-1" aria-disabled="true"{% endif %} id="levelup" href="{% url 'character_level_up' %}">
             Level Up!
         </a>
         {% if cooldown_s %}
             <div class="col-auto" id="hint_div_id">
-                <span id="timer_id" class="form-text"> Cooldown {{ cooldown_s }}</span>
+                <span id="timer_id" class="form-text"></span>
             </div>
         {% endif %}
     {% else %}
@@ -23,17 +23,18 @@
     {% endif %}
 
 
-
     <script type="text/javascript">
-        let cooldown_ms = {{ cooldown_s }} * 1000;
+        let cooldown_s = {{ cooldown_s }};
         var character_level = {{ character.level }};
 
-        if (cooldown_ms && (character_level < {{ character.MAX_LEVEL }})) {
+        ms_to_human(cooldown_s);
+
+        if (cooldown_s && (character_level < {{ character.MAX_LEVEL }})) {
             const interval = setInterval(update_timer, 1000);
             function update_timer() {
-                cooldown_ms = cooldown_ms - 1000;
-                document.getElementById("timer_id").innerHTML = 'Cooldown ' + cooldown_ms / 1000;
-                if (cooldown_ms <= 0) {
+                cooldown_s = cooldown_s - 1;
+                ms_to_human(cooldown_s)
+                if (cooldown_s <= 0) {
                     var hint = document.getElementById("hint_div_id");
                     hint.parentNode.removeChild(hint);
                     document.getElementById("levelup").classList.remove("disabled");
@@ -42,6 +43,18 @@
                     clearInterval(interval);
                 }
             }
+        }
+
+        function ms_to_human(ms) {
+            let countdown;
+            if (ms >= 60) {
+                countdown = parseInt(ms / 60) + ' min';
+            }
+            else {
+                countdown = ms + ' sec';
+            }
+            document.getElementById("timer_id").innerHTML = countdown + ' cooldown';
+
         }
     </script>
 {% endblock %}

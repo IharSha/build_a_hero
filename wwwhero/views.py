@@ -8,23 +8,37 @@ from django.contrib import messages
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
-from wwwhero.models import Character, CharacterAttributes, UserVisit, CharacterSelection, CharacterCooldown
+from wwwhero.models import (
+    Character,
+    CharacterAttributes,
+    CharacterCooldown,
+    CharacterLocation,
+    CharacterSelection,
+    Location,
+    UserVisit,
+)
 from wwwhero.forms import CharacterCreateForm
 from wwwhero.exceptions import LevelUpCooldownError, MaxLevelError
 
 
 def index(request):
     count_user_visit(request)
+    context = {}
 
     user = request.user
     if request.user.is_authenticated:
         characters = Character.objects.filter(user=user).order_by('-updated_at')
-        selected_char = CharacterSelection.objects.filter(user=user).first()
-        context = {'characters': characters, 'selected_char': selected_char}
-    else:
-        context = {}
+        character_id = request.session.get('character_id')
+        selected_char = Character.objects.filter(id=character_id).first()
+        location = CharacterLocation.objects.filter(character_id=character_id).first()
 
-    return render(request, 'wwwhero/index.html', {'user': user, 'context': context})
+        context = {
+            'characters': characters,
+            'selected_char': selected_char,
+            'location': location,
+        }
+
+    return render(request, 'wwwhero/index.html', context)
 
 
 @login_required
@@ -37,22 +51,26 @@ def character_select(request, character_id):
         pk=character_id,
         user=user
     )
-    with transaction.atomic():
-        CharacterSelection.objects.update_or_create(
-            user=user,
-            defaults={'character': character}
-        )
 
-    return redirect('character_detail')
+    CharacterSelection.objects.update_or_create(
+        user=user,
+        defaults={'character': character}
+    )
+    request.session['character_id'] = character.id
+
+    if CharacterLocation.objects.filter(character=character).first():
+        return redirect('story')
+
+    return redirect('map')
 
 
 @login_required
-def character_detail(request):
+def character_detail_view(request):
     count_user_visit(request)
 
     user = request.user
-    selected_char = get_object_or_404(CharacterSelection, user=user)
-    character = get_object_or_404(Character, pk=selected_char.character_id)
+    character = get_object_or_404(CharacterSelection, user=user).character
+
     attributes = CharacterAttributes.objects.get(character=character)
     cooldown = CharacterCooldown.objects.filter(
         character=character,
@@ -74,12 +92,64 @@ def character_detail(request):
 
 
 @login_required
+def map_view(request):
+    count_user_visit(request)
+
+    character = get_object_or_404(CharacterSelection, user=request.user).character
+
+    locations = Location.objects.filter(is_active=True).order_by('min_level')
+    character_location = CharacterLocation.objects.filter(character=character).first()
+
+    context = {
+        'character_location': character_location,
+        'locations': locations,
+        'character_level': character.level
+    }
+
+    return render(request, 'wwwhero/map.html', context)
+
+
+@login_required
+def location_select(request, location_id):
+    character = get_object_or_404(CharacterSelection, user=request.user).character
+    location = get_object_or_404(Location, id=location_id)
+
+    if not location.is_active or character.level < location.min_level:
+        messages.error(request, "Your are not allowed to go here :(")
+        return redirect('map')
+
+    CharacterLocation.objects.update_or_create(
+        character=character,
+        defaults={'location': location}
+    )
+    messages.success(request, f"Now you are here: {location}")
+
+    return redirect('story')
+
+
+@login_required
+def story_view(request):
+    count_user_visit(request)
+
+    character_id = request.session.get('character_id')
+    if not character_id:
+        messages.warning(request, "Please select or create a new character")
+        return redirect('index')
+
+    character_location = CharacterLocation.objects.filter(character_id=character_id).first()
+    context = {'character_location': character_location}
+
+    return render(request, 'wwwhero/story.html', context)
+
+
+@login_required
 def character_level_up(request):
     count_user_visit(request)
 
     user = request.user
     selected_char = get_object_or_404(CharacterSelection, user=user)
-    character = get_object_or_404(Character, pk=selected_char.character_id)
+    character = selected_char.character
+
     try:
         character.level_up()
         messages.success(request, f"Congrats! Now you're level {character.level}.")
@@ -123,6 +193,9 @@ def login_view(request):
         form = AuthenticationForm(data=request.POST)
         if form.is_valid():
             login(request, form.get_user())
+            selected_char = CharacterSelection.objects.filter(user=request.user).first()
+            if selected_char:
+                request.session['character_id'] = selected_char.character.id
             return redirect('index')
     else:
         form = AuthenticationForm()
