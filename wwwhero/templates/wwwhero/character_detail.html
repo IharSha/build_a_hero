@@ -21,6 +21,29 @@
             Level Maxed!
         </a>
     {% endif %}
+    <p></p>
+    <a class="btn btn-success" id="loot" href="{% url 'character_loot' %}">
+        Search for loot!
+    </a>
+
+    <h5>Inventory <span class="form-text">({{ items.count }}/{{ inventory.max_space }})</span></h5>
+        {% for item in items %}
+            <div>
+                {{ item.blueprint.name }}
+                {% if item.blueprint.is_stackable %}
+                    ({{ item.amount }})
+                 {% else %}
+                    ({{ item.get_rarity_display }})
+                {% endif %}
+
+                {% if item.min_damage %} <span class="form-text">(dmg: {{ item.min_damage }}-{{ item.max_damage }})</span>{% endif %}
+                {% if item.blueprint.is_droppable %}
+                    <a href="{% url 'inventory_drop' item.id %}">drop</a>
+                {% else %}
+                    <span class="form-text">special item</span>
+                {% endif %}
+            </div>
+        {% endfor %}
 
 
     <script type="text/javascript">

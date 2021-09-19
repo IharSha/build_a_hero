@@ -1,3 +1,5 @@
+import random
+
 from django.db import transaction
 from django.db.models import F
 from django.contrib.auth import login, authenticate, logout
@@ -15,7 +17,7 @@ from wwwhero.models import (
     CharacterLocation,
     CharacterSelection,
     Location,
-    UserVisit,
+    UserVisit, Item, ItemBlueprint, Inventory,
 )
 from wwwhero.forms import CharacterCreateForm
 from wwwhero.exceptions import LevelUpCooldownError, MaxLevelError
@@ -70,6 +72,8 @@ def character_detail_view(request):
 
     user = request.user
     character = get_object_or_404(CharacterSelection, user=user).character
+    inventory = Inventory.objects.get(character=character)
+    items = Item.objects.filter(inventory=inventory)
 
     attributes = CharacterAttributes.objects.get(character=character)
     cooldown = CharacterCooldown.objects.filter(
@@ -85,7 +89,9 @@ def character_detail_view(request):
     context = {
         'character': character,
         'attributes': attributes,
-        'cooldown_s': cooldown_until
+        'cooldown_s': cooldown_until,
+        'items': items,
+        'inventory': inventory,
     }
 
     return render(request, 'wwwhero/character_detail.html', context)
@@ -165,6 +171,122 @@ def character_level_up(request):
 
 
 @login_required
+def character_loot(request):
+    count_user_visit(request)
+
+    user = request.user
+    character = get_object_or_404(CharacterSelection, user=user).character
+    inventory = Inventory.objects.get(character=character)
+    items = Item.objects.filter(inventory=inventory)
+    blueprints = ItemBlueprint.objects.all()
+    amount = 1
+
+    if items.count() >= inventory.max_space:
+        messages.error(request, 'Too many items, throw away something or level up')
+
+        return redirect('character_detail')
+
+    blueprint: ItemBlueprint = random.choice(blueprints)
+    if blueprint.item_type == ItemBlueprint.ItemType.GOLD:
+        item, amount = _update_gold(inventory)
+    elif ItemBlueprint.ItemType.QUEST == blueprint.item_type:
+        item, created = Item.objects.get_or_create(
+            inventory=inventory,
+            blueprint=blueprint,
+            rarity=Item.Rarity.LEGENDARY,
+        )
+        if not created:
+            item, amount = _update_gold(inventory)
+    else:
+        min_damage, max_damage = 0, 0
+
+        rarity_weight = {
+            Item.Rarity.COMMON: 20,
+            Item.Rarity.UNCOMMON: 10,
+            Item.Rarity.RARE: 5,
+            Item.Rarity.EPIC: 2,
+            Item.Rarity.LEGENDARY: 1,
+        }
+        rarities = []
+        for k, v in rarity_weight.items():
+            for i in range(v):
+                rarities.append(k)
+        rarity = random.choice(rarities)
+
+        if blueprint.item_type == ItemBlueprint.ItemType.WEAPON:
+            level_plus_rarity = character.level + rarity
+            min_damage = random.randint(
+                level_plus_rarity,
+                character.level * rarity + random.randint(1, character.level)
+            )
+            max_damage = random.randint(
+                min_damage,
+                min_damage + random.randint(1, level_plus_rarity * 2)
+            )
+        if blueprint.is_stackable:
+            item, created = Item.objects.get_or_create(
+                inventory=inventory,
+                blueprint=blueprint,
+                defaults={'rarity': Item.Rarity.COMMON}
+            )
+
+            if not created:
+                item.amount += 1
+                item.save(update_fields=['amount'])
+        else:
+            item = Item.objects.create(
+                inventory=inventory,
+                blueprint=blueprint,
+                min_damage=min_damage,
+                max_damage=max_damage,
+                rarity=rarity,
+                level=character.level,
+                cost=character.level * rarity
+            )
+
+    msg = f"Yay! You found {amount if amount > 1 else ''} {item.blueprint.name}."
+    messages.success(request, msg)
+
+    return redirect('character_detail')
+
+
+@login_required
+def inventory_drop(request, item_id):
+    character = get_object_or_404(CharacterSelection, user=request.user).character
+    inventory = Inventory.objects.get(character=character)
+    item = get_object_or_404(Item, id=item_id, inventory=inventory)
+    if item.blueprint.is_droppable:
+        if item.amount > 1:
+            item.amount -= 1
+        else:
+            item.inventory = None
+        item.save(update_fields=["amount", "inventory"])
+
+        messages.success(request, f"You've thrown away a(n) {item.blueprint.name}")
+    else:
+        messages.error(request, "You can't drop this item.")
+
+    return redirect('character_detail')
+
+
+def _update_gold(inventory):
+    level = inventory.character.level
+    update_amount = random.randint(level, level * 10)
+    gold_blueprint = ItemBlueprint.objects.get(name="gold")
+    item, _ = Item.objects.get_or_create(
+        inventory=inventory,
+        blueprint=gold_blueprint,
+        rarity=Item.Rarity.COMMON,
+        defaults={'amount': 0}
+    )
+
+    item.amount += update_amount
+    item.save()
+
+    return item, update_amount
+
+
+@login_required
 def character_create_view(request):
     count_user_visit(request)
 
@@ -176,6 +298,7 @@ def character_create_view(request):
             with transaction.atomic():
                 char, _ = Character.objects.get_or_create(name=name, user=user)
                 CharacterAttributes.objects.get_or_create(character=char)
+                Inventory.objects.get_or_create(character=char)
 
             messages.success(request, "Character created!")
             return redirect('character_select', character_id=char.id)

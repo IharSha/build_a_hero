@@ -39,6 +39,11 @@ class Character(models.Model):
                     'until': timezone.now() + timedelta(seconds=2 ** self.level)
                 }
             )
+
+            inv = Inventory.objects.get(character=self)
+            inv.max_space += 1
+            inv.save(update_fields=["max_space"])
+
             attrs.upgrade()
             self.save()
 
@@ -84,12 +89,12 @@ class CharacterAttributes(models.Model):
 
 
 class CharacterCooldown(models.Model):
-    class Type(models.TextChoices):
-        LEVEL = "Level"
-        SKILL = "Skill"
+    class Type(models.IntegerChoices):
+        LEVEL = 1, "Level"
+        SKILL = 2, "Skill"
+        SEARCH = 3, "Search"
 
-    type = models.CharField(
-        max_length=5,
+    type = models.PositiveSmallIntegerField(
         choices=Type.choices,
         default=Type.LEVEL,
         blank=False
@@ -129,6 +134,80 @@ class CharacterLocation(models.Model):
 
     def __str__(self):
         return str(self.location)
+
+
+class ItemBlueprint(models.Model):
+    class ItemType(models.IntegerChoices):
+        ARMOR = 1, "Armor"
+        JUNK = 2, "Junk"
+        GOLD = 3, "Gold"
+        QUEST = 4, "Quest"
+        WEAPON = 5, "Weapon"
+
+    class SlotType(models.IntegerChoices):
+        HEAD = 1, "Head"
+        BREAST = 2, "Breast"
+        LEGS = 3, "Legs"
+        LEFT = 4, "Left arm"
+        RIGHT = 5, "Right arm"
+        BOOTS = 6, "Boots"
+        INVENTORY = 7, "Inventory"
+
+    item_type = models.PositiveSmallIntegerField(choices=ItemType.choices, blank=False)
+    slot_type = models.PositiveSmallIntegerField(choices=SlotType.choices, blank=False)
+    name = models.CharField(max_length=32, unique=True)
+    description = models.CharField(max_length=512, blank=True)
+    is_consumable = models.BooleanField(default=False)
+    is_stackable = models.BooleanField(default=False)
+    is_droppable = models.BooleanField(default=False)
+    base_cost = models.PositiveSmallIntegerField(default=1)
+
+    def __str__(self):
+        return f"{self.name} ({self.get_item_type_display()})"
+
+
+class Inventory(models.Model):
+    character = models.ForeignKey(Character, on_delete=models.CASCADE)
+    max_space = models.PositiveSmallIntegerField(default=20)
+
+    def __str__(self):
+        return f"{self.character}'s inventory"
+
+
+class Item(models.Model):
+    class Rarity(models.IntegerChoices):
+        COMMON = 1, "Common"
+        UNCOMMON = 2, "Uncommon"
+        RARE = 3, "Rare"
+        EPIC = 4, "Epic"
+        LEGENDARY = 5, "Legendary"
+
+    blueprint = models.ForeignKey(ItemBlueprint, on_delete=models.CASCADE)
+    inventory = models.ForeignKey(
+        Inventory,
+        blank=True,
+        null=True,
+        on_delete=models.CASCADE
+    )
+
+    level = models.PositiveSmallIntegerField(default=1)
+    amount = models.PositiveSmallIntegerField(default=1)
+    rarity = models.PositiveSmallIntegerField(choices=Rarity.choices)
+
+    min_damage = models.PositiveSmallIntegerField(default=0)
+    max_damage = models.PositiveSmallIntegerField(default=0)
+    defense = models.PositiveSmallIntegerField(default=0)
+    health = models.PositiveSmallIntegerField(default=0)
+    cost = models.PositiveSmallIntegerField(default=1)
+
+    skin = models.ImageField(upload_to='skins/item', blank=True)
+
+    def __str__(self):
+        prefix = ""
+        if self.blueprint.is_stackable:
+            prefix = f"{self.amount} "
+
+        return f"{prefix}{self.blueprint.name} (character: {self.inventory.character})"
 
 
 class UserVisit(models.Model):
