@@ -10,7 +10,6 @@ class CharacterAttributesModelTests(TestCase):
         self.u = User.objects.create_user(username='Bob', password='strong!1')
         self.char = Character.objects.create(user=self.u, name="Dylan")
         self.attrs = CharacterAttributes.objects.create(character=self.char)
-        self.inv = Inventory.objects.create(character=self.char)
 
     def test_upgrade(self):
         expected_hp_dmg = self.attrs.hp + self.attrs.dmg + self.attrs.LEVEL_UP_POINTS
@@ -29,6 +28,7 @@ class CharacterModelTests(TestCase):
         self.u = User.objects.create_user(username='Bob', password='strong!1')
         self.char = Character.objects.create(user=self.u, name="Dylan")
         self.attrs = CharacterAttributes.objects.create(character=self.char)
+        self.inv = Inventory.objects.create(character=self.char)
 
     @mock.patch('wwwhero.models.CharacterAttributes.upgrade')
     def test_level_up(self, mock_attrs_upgrade):
