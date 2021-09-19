@@ -2,7 +2,7 @@ from unittest import mock
 
 from django.test import TestCase
 
-from wwwhero.models import CharacterAttributes, Character, User
+from wwwhero.models import CharacterAttributes, Character, Inventory, User
 
 
 class CharacterAttributesModelTests(TestCase):
