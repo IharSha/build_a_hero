@@ -1,3 +1,19 @@
 {% extends 'wwwhero/base.html' %}
 
 {% block title %}Story{% endblock %}
+
+
+{% block content %}
+    {% if character_location %}
+        <h4> You are at {{ character_location }}</h4>
+        <br>
+        <a class="btn btn-secondary" href="{% url 'character_detail'%}">Inventory</a>
+        <a class="btn btn-success" id="loot" href="{% url 'character_loot' %}">
+            Search for loot!
+        </a>
+    {% else %}
+        <h5> Go to map {{ character_location }}</h5>
+    {% endif %}
+
+
+{% endblock %}

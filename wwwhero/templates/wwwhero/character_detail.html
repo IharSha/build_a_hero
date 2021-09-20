@@ -21,29 +21,31 @@
             Level Maxed!
         </a>
     {% endif %}
-    <p></p>
-    <a class="btn btn-success" id="loot" href="{% url 'character_loot' %}">
-        Search for loot!
-    </a>
 
-    <h5>Inventory <span class="form-text">({{ items.count }}/{{ inventory.max_space }})</span></h5>
-        {% for item in items %}
-            <div>
-                {{ item.blueprint.name }}
-                {% if item.blueprint.is_stackable %}
-                    ({{ item.amount }})
-                 {% else %}
-                    ({{ item.get_rarity_display }})
-                {% endif %}
+    <p><h5>Inventory <span class="form-text">({{ items.count }}/{{ inventory.max_space }})</span></h5></p>
+    <div class="container">
+        <div class="row justify-content-md-center">
+            {% for item in items %}
+                <div class="col-md-4 border bg-light">
+                    {{ item.name }}
+                    {% if item.blueprint.is_stackable %}
+                        ({{ item.amount }})
+                    {% endif %}
 
-                {% if item.min_damage %} <span class="form-text">(dmg: {{ item.min_damage }}-{{ item.max_damage }})</span>{% endif %}
-                {% if item.blueprint.is_droppable %}
-                    <a href="{% url 'inventory_drop' item.id %}">drop</a>
-                {% else %}
-                    <span class="form-text">special item</span>
-                {% endif %}
-            </div>
-        {% endfor %}
+                    {% if item.min_damage %} <span class="form-text">(dmg: {{ item.min_damage }}-{{ item.max_damage }})</span>{% endif %}
+
+                    {% if item.blueprint.is_droppable %}
+                        <a class="btn btn-warning btn-ms btn-outline-secondary py-0" style="font-size: 0.6em;" id="drop" href="{% url 'inventory_drop' item_id=item.id %}">drop</a>
+                    {% endif %}
+                    {% if item.blueprint.is_droppable and item.blueprint.is_stackable and item.amount > 1 %}
+                        <a class="btn btn-warning btn-ms btn-outline-secondary py-0" style="font-size: 0.6em;" id="drop_all" href="{% url 'inventory_drop_all' item_id=item.id drop_all="all" %}">drop all</a>
+                    {% endif %}
+                    <div><span class="form-text">{{ item.blueprint.description }}</span></div>
+                    <div><span class="form-text">Level {{ item.level }}, cost {{ item.cost }}</span></div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
 
 
     <script type="text/javascript">

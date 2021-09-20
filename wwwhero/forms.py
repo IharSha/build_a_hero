@@ -11,7 +11,7 @@ class CharacterCreateForm(forms.Form):
         super().__init__(*args, **kwargs)
 
     def clean_name(self):
-        name = self.cleaned_data['name']
+        name = self.cleaned_data["name"]
         if Character.objects.filter(name=name, user=self.user).exists():
-            raise forms.ValidationError('The character [%s] already exists' % name)
+            raise forms.ValidationError("The character [%s] already exists" % name)
         return name

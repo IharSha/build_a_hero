@@ -1,7 +1,9 @@
+import random
 from random import randint
 from datetime import timedelta
 
 from django.contrib.auth.models import User
+from django.core.validators import MinValueValidator
 from django.db import models, transaction
 from django.utils import timezone
 
@@ -36,7 +38,7 @@ class Character(models.Model):
                 character=self,
                 type=CharacterCooldown.Type.LEVEL,
                 defaults={
-                    'until': timezone.now() + timedelta(seconds=2 ** self.level)
+                    "until": timezone.now() + timedelta(seconds=2 ** self.level)
                 }
             )
 
@@ -51,7 +53,7 @@ class Character(models.Model):
         return f"{self.user}, {self.name}, level {self.level}"
 
     class Meta:
-        unique_together = ['user', 'name']
+        unique_together = ["user", "name"]
 
 
 class CharacterSelection(models.Model):
@@ -103,7 +105,7 @@ class CharacterCooldown(models.Model):
     until = models.DateTimeField()
 
     class Meta:
-        unique_together = ['type', 'character']
+        unique_together = ["type", "character"]
 
 
 class LocationType(models.Model):
@@ -115,8 +117,11 @@ class LocationType(models.Model):
 
 class Location(models.Model):
     name = models.CharField(max_length=64, unique=True)
-    image = models.ImageField(upload_to='bg/location', blank=True)
-    min_level = models.PositiveSmallIntegerField(default=1)
+    image = models.ImageField(upload_to="bg/location", blank=True)
+    min_level = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1)],
+        default=1
+    )
     is_active = models.BooleanField(default=False)
     type = models.ForeignKey(LocationType, on_delete=models.CASCADE)
 
@@ -189,6 +194,7 @@ class Item(models.Model):
         null=True,
         on_delete=models.CASCADE
     )
+    name = models.CharField(max_length=64, default="")
 
     level = models.PositiveSmallIntegerField(default=1)
     amount = models.PositiveSmallIntegerField(default=1)
@@ -200,14 +206,37 @@ class Item(models.Model):
     health = models.PositiveSmallIntegerField(default=0)
     cost = models.PositiveSmallIntegerField(default=1)
 
-    skin = models.ImageField(upload_to='skins/item', blank=True)
+    skin = models.ImageField(upload_to="skins/item", blank=True)
 
     def __str__(self):
         prefix = ""
         if self.blueprint.is_stackable:
             prefix = f"{self.amount} "
 
-        return f"{prefix}{self.blueprint.name} (character: {self.inventory.character})"
+        return f"{prefix}{self.name} (character: {self.inventory.character})"
+
+    def generate_name(self):
+        prefixes = {
+            self.Rarity.COMMON: ["broken", "old", "useless", "dirty", "ugly"],
+            self.Rarity.UNCOMMON: ["simple", "ordinary", "uncommon"],
+            self.Rarity.RARE: ["new", "nice", "quality", "rare", "shiny"],
+            self.Rarity.EPIC: ["fancy", "epic", "brutal"],
+            self.Rarity.LEGENDARY: ["legendary", "extraordinary", "incredible"],
+        }
+        postfixes = {
+            self.Rarity.COMMON: ["dumbness", "misery", "bad luck", "dirt", ""],
+            self.Rarity.UNCOMMON: ["", "fear", ""],
+            self.Rarity.RARE: ["", "queen", "king", "sad harold"],
+            self.Rarity.EPIC: ["rare sand", "void from the ocean", "epicity"],
+            self.Rarity.LEGENDARY: ["insane power", "", "immortality", "unstable power"],
+        }
+
+        postfix = random.choice(postfixes[self.Rarity(self.rarity)])
+        prefix = random.choice(prefixes[self.Rarity(self.rarity)])
+        self.name = f"{prefix} {self.blueprint.name}{' of ' + postfix if postfix else ''}"
+        self.save(update_fields=["name"])
+
+        return self.name
 
 
 class UserVisit(models.Model):
@@ -218,11 +247,11 @@ class UserVisit(models.Model):
 
     def __str__(self):
         if len(self.url) > 10:
-            url = self.url[:10] + '...'
+            url = self.url[:10] + "..."
         else:
             url = self.url
 
         return f"{self.user.username}, {url}, {self.method}, {self.view} views"
 
     class Meta:
-        unique_together = ['user', 'url', 'method']
+        unique_together = ["user", "url", "method"]

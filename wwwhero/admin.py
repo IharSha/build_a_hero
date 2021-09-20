@@ -4,23 +4,23 @@ from .models import *
 
 
 class CharacterAdmin(admin.ModelAdmin):
-    list_display = ('user', 'name', 'created_at', 'updated_at')
+    list_display = ("user", "name", "created_at", "updated_at")
 
 
 class CharacterCooldownAdmin(admin.ModelAdmin):
-    list_display = ('type', 'until', 'character')
+    list_display = ("type", "until", "character")
 
 
 class CharacterSelectionAdmin(admin.ModelAdmin):
-    list_display = ('user', 'character')
+    list_display = ("user", "character")
 
 
 class CharacterLocationAdmin(admin.ModelAdmin):
-    list_display = ('character', 'location')
+    list_display = ("character", "location")
 
 
 class LocationAdmin(admin.ModelAdmin):
-    list_display = ('name', 'min_level', 'type', 'is_active')
+    list_display = ("name", "min_level", "type", "is_active")
 
 
 admin.site.register(Character, CharacterAdmin)

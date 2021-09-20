@@ -7,7 +7,7 @@ from wwwhero.models import CharacterAttributes, Character, Inventory, User
 
 class CharacterAttributesModelTests(TestCase):
     def setUp(self):
-        self.u = User.objects.create_user(username='Bob', password='strong!1')
+        self.u = User.objects.create_user(username="Bob", password="strong!1")
         self.char = Character.objects.create(user=self.u, name="Dylan")
         self.attrs = CharacterAttributes.objects.create(character=self.char)
 
@@ -25,12 +25,12 @@ class CharacterAttributesModelTests(TestCase):
 
 class CharacterModelTests(TestCase):
     def setUp(self):
-        self.u = User.objects.create_user(username='Bob', password='strong!1')
+        self.u = User.objects.create_user(username="Bob", password="strong!1")
         self.char = Character.objects.create(user=self.u, name="Dylan")
         self.attrs = CharacterAttributes.objects.create(character=self.char)
         self.inv = Inventory.objects.create(character=self.char)
 
-    @mock.patch('wwwhero.models.CharacterAttributes.upgrade')
+    @mock.patch("wwwhero.models.CharacterAttributes.upgrade")
     def test_level_up(self, mock_attrs_upgrade):
         expected_level = self.char.level + 1
 
