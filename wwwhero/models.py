@@ -187,6 +187,8 @@ class Item(models.Model):
         EPIC = 4, "Epic"
         LEGENDARY = 5, "Legendary"
 
+    MAX_NAME_LENGTH = 64
+
     blueprint = models.ForeignKey(ItemBlueprint, on_delete=models.CASCADE)
     inventory = models.ForeignKey(
         Inventory,
@@ -194,7 +196,7 @@ class Item(models.Model):
         null=True,
         on_delete=models.CASCADE
     )
-    name = models.CharField(max_length=64, default="")
+    name = models.CharField(max_length=MAX_NAME_LENGTH, default="")
 
     level = models.PositiveSmallIntegerField(default=1)
     amount = models.PositiveSmallIntegerField(default=1)
@@ -209,11 +211,14 @@ class Item(models.Model):
     skin = models.ImageField(upload_to="skins/item", blank=True)
 
     def __str__(self):
-        prefix = ""
+        prefix,  inventory = "", ""
+
         if self.blueprint.is_stackable:
             prefix = f"{self.amount} "
+        if self.inventory:
+            inventory = f" ({self.inventory})"
 
-        return f"{prefix}{self.name} (character: {self.inventory.character})"
+        return f"{prefix}{self.name}{inventory}"
 
     def generate_name(self):
         prefixes = {
@@ -233,7 +238,10 @@ class Item(models.Model):
 
         postfix = random.choice(postfixes[self.Rarity(self.rarity)])
         prefix = random.choice(prefixes[self.Rarity(self.rarity)])
+
         self.name = f"{prefix} {self.blueprint.name}{' of ' + postfix if postfix else ''}"
+        if len(self.name) > self.MAX_NAME_LENGTH:
+            self.name = self.blueprint.name
         self.save(update_fields=["name"])
 
         return self.name
